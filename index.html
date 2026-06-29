@@ -3,48 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daily Seeded Word Search</title>
+    <title>The Sunday Puzzle - Daily Word Search</title>
     <style>
+        /* Editorial Broadsheet Theme */
         :root {
-            --bg-color: #121212;
-            --text-color: #ffffff;
-            --grid-bg: #1e1e1e;
-            --cell-bg: #2d2d2d;
-            --cell-hover: #3d3d3d;
-            --selected: #f39c12; /* Switched selected to a nice orange to contrast the heat map */
-            --error: #e74c3c;
+            --bg-color: #f4f4f4; /* Light newspaper cream/grey */
+            --text-color: #121212; /* Off-black */
+            --grid-border: #999999;
+            --cell-bg: #ffffff;
+            --cell-hover: #e8e8e8;
+            --selected: #e65100; /* Distinctive punchy orange for active selection */
+            
+            /* Heatmap - Sophisticated Editorial Blues */
+            --heat-1: #d0e8f2; /* Light Blue */
+            --heat-2: #89c4f4; /* Medium Blue */
+            --heat-3: #3498db; /* Strong Blue */
+            --heat-max: #1e3799; /* Deep Navy */
+
+            /* Interactive Focus */
+            --word-focus: #f1c40f; /* Yellow highlighter */
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            /* Clean sans-serif for the UI, typical of modern broadsheet web design */
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
             display: flex;
             flex-direction: column;
             align-items: center;
             margin: 0;
-            padding: 20px;
+            padding: 40px 20px;
             user-select: none;
+        }
+
+        .game-container {
+            background-color: #ffffff;
+            padding: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border-top: 4px solid var(--text-color); /* Strong editorial top line */
+            max-width: 600px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .title {
+            /* Classic Serif for the newspaper feel */
+            font-family: "Georgia", "Times New Roman", serif;
+            font-size: 2rem;
+            margin: 0 0 5px 0;
+            font-weight: normal;
+            letter-spacing: 0.5px;
+        }
+        
+        .subtitle {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 25px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .header {
             display: flex;
             justify-content: space-between;
             width: 100%;
-            max-width: 500px;
+            max-width: 420px;
             margin-bottom: 20px;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: bold;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
         }
 
         #grid {
             display: grid;
             grid-template-columns: repeat(10, 40px);
             grid-template-rows: repeat(10, 40px);
-            gap: 5px;
-            background-color: var(--grid-bg);
-            padding: 10px;
-            border-radius: 8px;
+            gap: 1px; /* Creates the thin border look */
+            background-color: var(--grid-border);
+            border: 1px solid var(--grid-border);
             touch-action: none;
         }
 
@@ -53,30 +93,43 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 1.5rem;
+            font-size: 1.3rem;
             font-weight: bold;
-            border-radius: 4px;
+            font-family: "Helvetica Neue", Helvetica, sans-serif;
             cursor: pointer;
             transition: background-color 0.2s, transform 0.1s;
+            position: relative;
         }
 
         .cell:hover { background-color: var(--cell-hover); }
-        .cell.selected { background-color: var(--selected); color: white; transform: scale(1.05); }
-
-        /* --- 1. The Heatmap Colors --- */
-        .cell.found-1 { background-color: #27ae60; color: white; } /* Green */
-        .cell.found-2 { background-color: #2980b9; color: white; } /* Blue */
-        .cell.found-3 { background-color: #8e44ad; color: white; } /* Purple */
-        .cell.found-max { 
-            background-color: #e84393; 
+        .cell.selected { 
+            background-color: var(--selected); 
             color: white; 
-            box-shadow: 0 0 8px #e84393; /* Pink Glow */
-        } 
+            transform: scale(1.05); 
+            z-index: 5;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
 
-        /* --- 2. The Epic Word Pulse Animation --- */
+        /* --- Heatmap Colors --- */
+        .cell.found-1 { background-color: var(--heat-1); color: var(--text-color); }
+        .cell.found-2 { background-color: var(--heat-2); color: #111; }
+        .cell.found-3 { background-color: var(--heat-3); color: white; }
+        .cell.found-max { background-color: var(--heat-max); color: white; }
+
+        /* --- Interactive Hover Focus --- */
+        .cell.word-focus {
+            background-color: var(--word-focus) !important;
+            color: #000 !important;
+            transform: scale(1.15);
+            z-index: 10;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+            border-radius: 4px;
+        }
+
+        /* --- Epic Word Animation --- */
         @keyframes epicPulse {
             0% { transform: scale(1); box-shadow: 0 0 0px transparent; z-index: 1; }
-            50% { transform: scale(1.25); box-shadow: 0 0 15px #f1c40f; background-color: #f1c40f; z-index: 10; }
+            50% { transform: scale(1.3); box-shadow: 0 0 15px var(--selected); background-color: var(--selected); color: white; z-index: 10; }
             100% { transform: scale(1); box-shadow: 0 0 0px transparent; z-index: 1; }
         }
         .cell.pulse {
@@ -87,46 +140,69 @@
             margin-top: 15px;
             height: 24px;
             font-weight: bold;
-            color: var(--error);
+            color: var(--selected);
         }
 
         #word-list {
             margin-top: 20px;
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
-            max-width: 500px;
+            gap: 8px;
+            width: 100%;
             justify-content: center;
         }
 
         .found-word {
-            background-color: #27ae60;
-            padding: 5px 10px;
-            border-radius: 15px;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            color: #333;
+            padding: 4px 12px;
+            border-radius: 20px;
             font-size: 0.9rem;
-            transition: transform 0.2s;
+            cursor: pointer;
+            transition: all 0.2s;
         }
 
-        /* Highlight for long words in the list */
-        .found-word.epic-badge {
-            background-color: #f1c40f;
+        .found-word:hover {
+            background-color: var(--word-focus);
+            border-color: #d4ac0d;
             color: #000;
-            font-weight: bold;
-            box-shadow: 0 0 5px #f1c40f;
-            transform: scale(1.1);
+            transform: translateY(-2px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
+
+        .found-word.epic-badge {
+            background-color: var(--selected);
+            color: white;
+            border-color: #d84b00;
+            font-weight: bold;
+        }
+        .found-word.epic-badge:hover {
+            background-color: var(--word-focus);
+            color: #000;
+        }
+
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <div>Time: <span id="timer">10:00</span></div>
-        <div>Score: <span id="score">0</span></div>
-    </div>
+    <div class="game-container">
+        <h1 class="title">The Sunday Puzzle</h1>
+        <div class="subtitle">Daily Word Search</div>
 
-    <div id="grid"></div>
-    <div id="message">Loading dictionary...</div>
-    <div id="word-list"></div>
+        <div class="header">
+            <div>Timer: <span id="timer">10:00</span></div>
+            <div>Points: <span id="score">0</span></div>
+        </div>
+
+        <div id="grid"></div>
+        <div id="message">Loading dictionary...</div>
+        
+        <div style="width: 100%; text-align: center; margin-top: 10px; font-size: 0.85rem; color: #777;">
+            Hover over a found word to reveal it on the board.
+        </div>
+        <div id="word-list"></div>
+    </div>
 
     <script>
         // --- Deterministic PRNG Setup ---
@@ -173,7 +249,7 @@
         let validDictionary = new Set();
         let gameActive = false;
 
-        // --- Load Dictionary ---
+        // --- Load Dictionary (.txt file) ---
         fetch('valid_words.txt')
             .then(response => response.text()) 
             .then(data => {
@@ -187,7 +263,7 @@
             })
             .catch(error => {
                 console.error("Failed to load dictionary:", error);
-                showMessage("Error loading valid_words.txt. Check local server (CORS).");
+                showMessage("Error loading valid_words.txt. Check local server.");
             });
 
         // --- Grid Generation ---
@@ -201,7 +277,7 @@
                 cell.textContent = getRandomLetter();
                 cell.dataset.x = x;
                 cell.dataset.y = y;
-                cell.dataset.uses = 0; // Initialize use counter
+                cell.dataset.uses = 0; 
                 
                 cell.addEventListener('mousedown', () => startDrag(cell, x, y));
                 cell.addEventListener('mouseenter', () => continueDrag(cell, x, y));
@@ -269,12 +345,15 @@
             }
 
             const isValid = validDictionary.has(word);
-            const isEpic = word.length > 5; // Check for Epic words
+            const isEpic = word.length > 5; 
 
             if (isValid) {
                 score += word.length;
                 document.getElementById('score').textContent = score;
                 foundWords.add(word);
+                
+                // Store the exact DOM elements used for this word
+                const wordCells = dragPath.map(node => node.cell);
                 
                 // Build the word badge
                 const wordBadge = document.createElement('div');
@@ -282,38 +361,36 @@
                 if (isEpic) wordBadge.classList.add('epic-badge');
                 wordBadge.textContent = word;
                 
-                // Add to the top of the list so it's always visible
+                // --- INTERACTIVE HOVER FEATURE ---
+                wordBadge.addEventListener('mouseenter', () => {
+                    wordCells.forEach(cell => cell.classList.add('word-focus'));
+                });
+                wordBadge.addEventListener('mouseleave', () => {
+                    wordCells.forEach(cell => cell.classList.remove('word-focus'));
+                });
+
+                // Add to the list
                 const wordList = document.getElementById('word-list');
                 wordList.insertBefore(wordBadge, wordList.firstChild);
 
-                // Update the grid visuals
+                // Update the grid visuals (Heatmap & Pulse)
                 dragPath.forEach((node, index) => {
                     node.cell.classList.remove('selected');
                     
-                    // Increment the use counter for this cell
                     let uses = parseInt(node.cell.dataset.uses);
                     uses++;
                     node.cell.dataset.uses = uses;
 
-                    // Apply the correct heat map class
                     node.cell.classList.remove('found-1', 'found-2', 'found-3', 'found-max');
                     if (uses === 1) node.cell.classList.add('found-1');
                     else if (uses === 2) node.cell.classList.add('found-2');
                     else if (uses === 3) node.cell.classList.add('found-3');
                     else node.cell.classList.add('found-max');
 
-                    // If it's an epic word, trigger the cascading pulse animation
                     if (isEpic) {
                         node.cell.classList.remove('pulse');
-                        // Stagger the animation slightly based on letter index
-                        setTimeout(() => {
-                            node.cell.classList.add('pulse');
-                        }, index * 50); 
-                        
-                        // Clean up the animation class so it can play again later
-                        setTimeout(() => {
-                            node.cell.classList.remove('pulse');
-                        }, (index * 50) + 600);
+                        setTimeout(() => { node.cell.classList.add('pulse'); }, index * 50); 
+                        setTimeout(() => { node.cell.classList.remove('pulse'); }, (index * 50) + 600);
                     }
                 });
                 dragPath = [];
