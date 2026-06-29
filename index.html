@@ -208,13 +208,14 @@
             color: #000;
         }
 
-        /* --- Stats Overlay --- */
+        /* --- Overlays --- */
+        #how-to-play-overlay,
         #results-overlay {
-            display: none;
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
             background-color: rgba(255, 255, 255, 0.95);
             z-index: 50;
+            display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
@@ -223,10 +224,58 @@
             backdrop-filter: blur(4px);
         }
 
+        #results-overlay {
+            display: none;
+            z-index: 40;
+        }
+
         #results-overlay.visible {
             display: flex;
         }
 
+        /* --- How to Play Content --- */
+        .how-to-content {
+            max-width: 450px;
+            background: #ffffff;
+            border: 2px solid var(--text-color);
+            padding: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .how-to-title {
+            font-family: "Georgia", serif;
+            font-size: 2rem;
+            margin-top: 0;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+
+        .how-to-list {
+            text-align: left;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 25px;
+            padding-left: 20px;
+        }
+
+        .start-btn {
+            background-color: var(--selected);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background 0.2s;
+            width: 100%;
+        }
+
+        .start-btn:hover { background-color: #d84b00; }
+        .start-btn:disabled { background-color: #ccc; cursor: not-allowed; }
+
+        /* --- Stats Screen Content --- */
         .stats-title {
             font-family: "Georgia", serif;
             font-size: 2.5rem;
@@ -302,12 +351,26 @@
 
         <div id="grid"></div>
         <div id="current-word-display"></div>
-        <div id="message">Loading dictionary...</div>
+        <div id="message"></div>
         
         <div style="width: 100%; text-align: center; margin-top: 5px; font-size: 0.85rem; color: #777;">
             Hover over a found word to reveal it on the board.
         </div>
         <div id="word-list"></div>
+
+        <!-- How To Play Overlay -->
+        <div id="how-to-play-overlay">
+            <div class="how-to-content">
+                <h2 class="how-to-title">How to Play</h2>
+                <ul class="how-to-list">
+                    <li><strong>Drag</strong> across letters to form words of 3 or more letters.</li>
+                    <li>Move <strong>horizontally, vertically, or diagonally</strong>. You can change direction at any time!</li>
+                    <li><strong>Retrace</strong> your steps to undo a selected letter if you make a mistake.</li>
+                    <li>Find as many words as you can before the <strong>10-minute</strong> timer runs out.</li>
+                </ul>
+                <button id="start-game-btn" class="start-btn" disabled>Loading Dictionary...</button>
+            </div>
+        </div>
 
         <!-- Stats Overlay -->
         <div id="results-overlay">
@@ -396,14 +459,25 @@
                                       .map(word => word.trim().toUpperCase())
                                       .filter(word => word.length >= 3);
                 validDictionary = new Set(wordArray);
-                gameActive = true;
-                showMessage(""); 
-                timerInterval = setInterval(updateTimer, 1000); 
+                
+                // Update the start button once the dictionary is ready
+                const startBtn = document.getElementById('start-game-btn');
+                startBtn.textContent = "Start Game";
+                startBtn.disabled = false;
             })
             .catch(error => {
                 console.error("Failed to load dictionary:", error);
+                const startBtn = document.getElementById('start-game-btn');
+                startBtn.textContent = "Error Loading Dictionary";
                 showMessage("Error loading valid_words.txt. Check local server.");
             });
+
+        // --- Start Game Logic ---
+        document.getElementById('start-game-btn').addEventListener('click', () => {
+            document.getElementById('how-to-play-overlay').style.display = 'none';
+            gameActive = true;
+            timerInterval = setInterval(updateTimer, 1000); 
+        });
 
         // --- Grid Generation ---
         const gridElement = document.getElementById('grid');
