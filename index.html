@@ -85,7 +85,7 @@
             gap: 1px; /* Creates the thin border look */
             background-color: var(--grid-border);
             border: 1px solid var(--grid-border);
-            touch-action: none;
+            touch-action: none; /* Prevents mobile scrolling while interacting with the grid */
         }
 
         .cell {
@@ -281,8 +281,11 @@
                 cell.dataset.y = y;
                 cell.dataset.uses = 0; 
                 
-                cell.addEventListener('mousedown', () => startDrag(cell, x, y));
-                cell.addEventListener('mouseenter', () => continueDrag(cell, x, y));
+                // Track initial tap/click
+                cell.addEventListener('pointerdown', (e) => {
+                    if (e.cancelable) e.preventDefault(); // Prevents touch drag from scrolling the page
+                    startDrag(cell, x, y);
+                });
                 
                 gridElement.appendChild(cell);
                 cells.push(cell);
@@ -290,9 +293,33 @@
             }
         }
 
-        window.addEventListener('mouseup', endDrag);
+        // --- Interaction Logic (Distance-based Pointer Tracking) ---
+        window.addEventListener('pointermove', (e) => {
+            if (!isDragging || !gameActive) return;
+            
+            // Find which cell the pointer is currently hovering over
+            const el = document.elementFromPoint(e.clientX, e.clientY);
+            const cell = el ? el.closest('.cell') : null;
+            
+            if (cell) {
+                // Calculate how close the pointer is to the center of the cell
+                const rect = cell.getBoundingClientRect();
+                const cx = rect.left + rect.width / 2;
+                const cy = rect.top + rect.height / 2;
+                
+                // Only trigger if the pointer is within 18px of the center.
+                // This gracefully ignores the cell's corners, stopping accidental diagonal grazing entirely!
+                if (Math.hypot(e.clientX - cx, e.clientY - cy) < 18) {
+                    const x = parseInt(cell.dataset.x);
+                    const y = parseInt(cell.dataset.y);
+                    continueDrag(cell, x, y);
+                }
+            }
+        });
 
-        // --- Interaction Logic (Free-form selection) ---
+        window.addEventListener('pointerup', endDrag);
+        window.addEventListener('pointercancel', endDrag);
+
         function startDrag(cell, x, y) {
             if (!gameActive) return;
             isDragging = true;
@@ -305,12 +332,13 @@
             if (!isDragging || !gameActive) return;
             
             const lastNode = dragPath[dragPath.length - 1];
+            if (lastNode.cell === cell) return; // Prevent duplicating the current cell
+
             const dx = x - lastNode.x;
             const dy = y - lastNode.y;
 
             // Enforce adjacency (horizontal, vertical, or diagonal movement only)
             if (Math.abs(dx) > 1 || Math.abs(dy) > 1) return;
-            if (dx === 0 && dy === 0) return; // Ignore staying on the same exact cell
 
             // Retrace steps: If the user hovers back over the immediately previous cell, undo the last step
             if (dragPath.length > 1 && dragPath[dragPath.length - 2].cell === cell) {
