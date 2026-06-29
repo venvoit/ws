@@ -70,7 +70,7 @@
             display: flex;
             justify-content: space-between;
             width: 100%;
-            max-width: 420px;
+            max-width: 500px;
             margin-bottom: 20px;
             font-size: 1.1rem;
             font-weight: bold;
@@ -192,6 +192,7 @@
 
         <div class="header">
             <div>Timer: <span id="timer">10:00</span></div>
+            <div>Words: <span id="word-count">0</span></div>
             <div>Points: <span id="score">0</span></div>
         </div>
 
@@ -240,11 +241,12 @@
 
         // --- Game State ---
         let score = 0;
+        let wordCount = 0;
         let timeRemaining = 600; 
         let timerInterval;
         let isDragging = false;
         let dragPath = [];
-        let dragDirection = null; 
+        let startNode = null; 
         const foundWords = new Set();
         let validDictionary = new Set();
         let gameActive = false;
@@ -269,6 +271,7 @@
         // --- Grid Generation ---
         const gridElement = document.getElementById('grid');
         const cells = [];
+        const gridCells = Array.from({length: 10}, () => new Array(10).fill(null));
 
         for (let y = 0; y < 10; y++) {
             for (let x = 0; x < 10; x++) {
@@ -284,48 +287,55 @@
                 
                 gridElement.appendChild(cell);
                 cells.push(cell);
+                gridCells[y][x] = cell;
             }
         }
 
         window.addEventListener('mouseup', endDrag);
 
-        // --- Interaction Logic ---
+        // --- Interaction Logic (Rubber-banding diagonal fix) ---
         function startDrag(cell, x, y) {
             if (!gameActive) return;
             isDragging = true;
-            dragPath = [{cell, x, y}];
-            dragDirection = null;
-            cell.classList.add('selected');
+            startNode = {x, y, cell};
+            dragPath = [startNode];
+            updateSelection();
             showMessage(""); 
         }
 
         function continueDrag(cell, x, y) {
-            if (!isDragging || !gameActive) return;
-            const lastNode = dragPath[dragPath.length - 1];
-            const dx = x - lastNode.x;
-            const dy = y - lastNode.y;
+            if (!isDragging || !gameActive || !startNode) return;
+            
+            const dx = x - startNode.x;
+            const dy = y - startNode.y;
 
-            if (Math.abs(dx) > 1 || Math.abs(dy) > 1) return;
-            if (dx === 0 && dy === 0) return;
+            // Enforce valid straight lines: dx must be 0, dy must be 0, or they must be equal (diagonal)
+            if (dx !== 0 && dy !== 0 && Math.abs(dx) !== Math.abs(dy)) return;
 
-            if (dragPath.length === 1) {
-                dragDirection = { dx, dy };
-                addCellToPath(cell, x, y);
-            } else {
-                if (dx === dragDirection.dx && dy === dragDirection.dy) {
-                    addCellToPath(cell, x, y);
-                }
+            const steps = Math.max(Math.abs(dx), Math.abs(dy));
+            const stepX = dx === 0 ? 0 : dx / Math.abs(dx);
+            const stepY = dy === 0 ? 0 : dy / Math.abs(dy);
+
+            // Dynamically rebuild the line from the start to the current mouse position
+            dragPath = [];
+            for (let i = 0; i <= steps; i++) {
+                const cx = startNode.x + i * stepX;
+                const cy = startNode.y + i * stepY;
+                dragPath.push({ cell: gridCells[cy][cx], x: cx, y: cy });
             }
+            updateSelection();
         }
 
-        function addCellToPath(cell, x, y) {
-            dragPath.push({cell, x, y});
-            cell.classList.add('selected');
+        function updateSelection() {
+            cells.forEach(c => c.classList.remove('selected'));
+            dragPath.forEach(node => node.cell.classList.add('selected'));
         }
 
         function endDrag() {
             if (!isDragging || !gameActive) return;
             isDragging = false;
+            if (dragPath.length === 0) return;
+
             const word = dragPath.map(node => node.cell.textContent).join('');
             
             if (word.length >= 3) {
@@ -348,8 +358,12 @@
             const isEpic = word.length > 5; 
 
             if (isValid) {
+                // Update Score and Words Made
                 score += word.length;
+                wordCount++;
                 document.getElementById('score').textContent = score;
+                document.getElementById('word-count').textContent = wordCount;
+                
                 foundWords.add(word);
                 
                 // Store the exact DOM elements used for this word
@@ -393,7 +407,9 @@
                         setTimeout(() => { node.cell.classList.remove('pulse'); }, (index * 50) + 600);
                     }
                 });
+                
                 dragPath = [];
+                startNode = null;
             } else {
                 showMessage("Not in dictionary");
                 clearSelection();
@@ -401,10 +417,9 @@
         }
 
         function clearSelection() {
-            dragPath.forEach(node => {
-                node.cell.classList.remove('selected');
-            });
+            cells.forEach(c => c.classList.remove('selected'));
             dragPath = [];
+            startNode = null;
         }
 
         function showMessage(msg) {
