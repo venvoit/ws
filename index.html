@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sunday Puzzle - Daily Word Search</title>
+    <title>The Daily Puzzle - Daily Word Search</title>
     <style>
         /* Editorial Broadsheet Theme */
         :root {
@@ -80,8 +80,8 @@
 
         #grid {
             display: grid;
-            grid-template-columns: repeat(10, 40px);
-            grid-template-rows: repeat(10, 40px);
+            grid-template-columns: repeat(8, 40px);
+            grid-template-rows: repeat(8, 40px);
             gap: 1px; /* Creates the thin border look */
             background-color: var(--grid-border);
             border: 1px solid var(--grid-border);
@@ -187,7 +187,7 @@
 <body>
 
     <div class="game-container">
-        <h1 class="title">The Sunday Puzzle</h1>
+        <h1 class="title">The Daily Puzzle</h1>
         <div class="subtitle">Daily Word Search</div>
 
         <div class="header">
@@ -270,10 +270,10 @@
         // --- Grid Generation ---
         const gridElement = document.getElementById('grid');
         const cells = [];
-        const gridCells = Array.from({length: 10}, () => new Array(10).fill(null));
+        const gridCells = Array.from({length: 8}, () => new Array(8).fill(null));
 
-        for (let y = 0; y < 10; y++) {
-            for (let x = 0; x < 10; x++) {
+        for (let y = 0; y < 8; y++) {
+            for (let x = 0; x < 8; x++) {
                 const cell = document.createElement('div');
                 cell.className = 'cell';
                 cell.textContent = getRandomLetter();
