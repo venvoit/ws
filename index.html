@@ -246,7 +246,6 @@
         let timerInterval;
         let isDragging = false;
         let dragPath = [];
-        let startNode = null; 
         const foundWords = new Set();
         let validDictionary = new Set();
         let gameActive = false;
@@ -293,36 +292,38 @@
 
         window.addEventListener('mouseup', endDrag);
 
-        // --- Interaction Logic (Rubber-banding diagonal fix) ---
+        // --- Interaction Logic (Free-form selection) ---
         function startDrag(cell, x, y) {
             if (!gameActive) return;
             isDragging = true;
-            startNode = {x, y, cell};
-            dragPath = [startNode];
+            dragPath = [{cell, x, y}];
             updateSelection();
             showMessage(""); 
         }
 
         function continueDrag(cell, x, y) {
-            if (!isDragging || !gameActive || !startNode) return;
+            if (!isDragging || !gameActive) return;
             
-            const dx = x - startNode.x;
-            const dy = y - startNode.y;
+            const lastNode = dragPath[dragPath.length - 1];
+            const dx = x - lastNode.x;
+            const dy = y - lastNode.y;
 
-            // Enforce valid straight lines: dx must be 0, dy must be 0, or they must be equal (diagonal)
-            if (dx !== 0 && dy !== 0 && Math.abs(dx) !== Math.abs(dy)) return;
+            // Enforce adjacency (horizontal, vertical, or diagonal movement only)
+            if (Math.abs(dx) > 1 || Math.abs(dy) > 1) return;
+            if (dx === 0 && dy === 0) return; // Ignore staying on the same exact cell
 
-            const steps = Math.max(Math.abs(dx), Math.abs(dy));
-            const stepX = dx === 0 ? 0 : dx / Math.abs(dx);
-            const stepY = dy === 0 ? 0 : dy / Math.abs(dy);
-
-            // Dynamically rebuild the line from the start to the current mouse position
-            dragPath = [];
-            for (let i = 0; i <= steps; i++) {
-                const cx = startNode.x + i * stepX;
-                const cy = startNode.y + i * stepY;
-                dragPath.push({ cell: gridCells[cy][cx], x: cx, y: cy });
+            // Retrace steps: If the user hovers back over the immediately previous cell, undo the last step
+            if (dragPath.length > 1 && dragPath[dragPath.length - 2].cell === cell) {
+                dragPath.pop();
+                updateSelection();
+                return;
             }
+
+            // Prevent self-intersection: cannot re-use a cell already active in the current path
+            if (dragPath.some(node => node.cell === cell)) return;
+
+            // It's a valid new adjacent move. Add it to the path!
+            dragPath.push({ cell, x, y });
             updateSelection();
         }
 
@@ -409,7 +410,6 @@
                 });
                 
                 dragPath = [];
-                startNode = null;
             } else {
                 showMessage("Not in dictionary");
                 clearSelection();
@@ -419,7 +419,6 @@
         function clearSelection() {
             cells.forEach(c => c.classList.remove('selected'));
             dragPath = [];
-            startNode = null;
         }
 
         function showMessage(msg) {
