@@ -44,8 +44,8 @@
             padding: 30px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
             border-top: 4px solid var(--text-color);
-            max-width: 600px;
-            width: 100%;
+            width: 90vw;
+            max-width: 500px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -99,11 +99,14 @@
 
         #grid {
             display: grid;
-            grid-template-columns: repeat(var(--grid-size), 40px);
-            grid-template-rows: repeat(var(--grid-size), 40px);
-            gap: 1px; 
+            /* Use fraction units to let cells scale automatically */
+            grid-template-columns: repeat(var(--grid-size), 1fr);
+            grid-template-rows: repeat(var(--grid-size), 1fr);
+            gap: 2px; 
             background-color: var(--grid-border);
-            border: 1px solid var(--grid-border);
+            border: 2px solid var(--grid-border);
+            width: 100%;
+            aspect-ratio: 1 / 1;
             touch-action: none; 
         }
 
@@ -112,7 +115,8 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 1.3rem;
+            /* Dynamically scale font size based on the grid size and container width */
+            font-size: calc(min(90vw, 500px) / var(--grid-size) * 0.45);
             font-weight: bold;
             font-family: "Helvetica Neue", Helvetica, sans-serif;
             cursor: pointer;
@@ -344,7 +348,7 @@
             position: fixed;
             bottom: 20px;
             right: 20px;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.8);
             color: white;
             padding: 15px;
             border-radius: 8px;
@@ -353,7 +357,7 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
-            opacity: 0.2;
+            opacity: 0.3;
             transition: opacity 0.2s;
             backdrop-filter: blur(4px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.2);
@@ -448,7 +452,7 @@
 
     <!-- Dev Menu -->
     <div id="dev-menu">
-        <h3>🛠️ Dev Menu</h3>
+        <h3>🛠️ Dev Settings</h3>
         <div>
             <label for="grid-size-select">Grid Size:</label>
             <select id="grid-size-select" onchange="changeGridSize(this.value)">
