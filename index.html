@@ -467,7 +467,7 @@
     <script>
         // --- Deterministic PRNG Setup ---
         const today = new Date().toISOString().split('T')[0];
-        let random; // Will be initialized based on grid size
+        let random; 
         
         function mulberry32(a) {
             return function() {
@@ -488,9 +488,23 @@
             }
         }
 
-        // --- Weighted Letter Distribution ---
-        const vowels = ['E','E','E','E','A','A','A','O','O','O','I','I','U'];
-        const consonants = ['T','T','T','N','N','R','R','S','S','H','H','D','L','C','M','F','Y','W','G','P','B','V','K','X','Q','J','Z'];
+        // --- Weighted Letter Distribution (Scrabble/Boggle Inspired) ---
+        // Significantly reduced rare letters and introduced the "Qu" tile.
+        const vowels = [
+            'E','E','E','E','E','E','E','E','E','E','E','E',
+            'A','A','A','A','A','A','A','A','A',
+            'I','I','I','I','I','I','I','I','I',
+            'O','O','O','O','O','O','O','O',
+            'U','U','U','U'
+        ];
+        const consonants = [
+            'T','T','T','T','T','T', 'N','N','N','N','N','N',
+            'R','R','R','R','R','R', 'S','S','S','S', 'L','L','L','L',
+            'D','D','D','D', 'H','H','H', 'G','G','G', 'C','C', 'M','M',
+            'B','B', 'F','F', 'P','P', 'V','V', 'W','W', 'Y','Y',
+            'K', 'J', 'X', 'Z', 'Qu'
+        ];
+        
         function getRandomLetter() {
             const isVowel = random() < 0.40; 
             const pool = isVowel ? vowels : consonants;
@@ -523,7 +537,6 @@
                                       .filter(word => word.length >= 3);
                 validDictionary = new Set(wordArray);
                 
-                // Update the start button once the dictionary is ready
                 const startBtn = document.getElementById('start-game-btn');
                 startBtn.textContent = "Start Game";
                 startBtn.disabled = false;
@@ -539,7 +552,6 @@
         const gridElement = document.getElementById('grid');
 
         function buildGrid() {
-            // Seed PRNG uniquely for today + the selected grid size so swapping sizes gives a consistent, but different, board
             const seedFunc = xmur3(`${today}-size-${gridSize}`);
             random = mulberry32(seedFunc());
             
@@ -556,7 +568,6 @@
                     cell.dataset.y = y;
                     cell.dataset.uses = 0; 
                     
-                    // Track initial tap/click
                     cell.addEventListener('pointerdown', (e) => {
                         if (e.cancelable) e.preventDefault(); 
                         startDrag(cell, x, y);
@@ -577,7 +588,6 @@
         });
 
         function resetGame() {
-            // Reset Stats & Board Status
             score = 0;
             wordCount = 0;
             totalLetters = 0;
@@ -587,7 +597,6 @@
             dragPath = [];
             isDragging = false;
             
-            // Re-render Game Visuals
             document.getElementById('score').textContent = score;
             document.getElementById('word-list').innerHTML = '';
             document.getElementById('current-word-display').textContent = '';
@@ -595,25 +604,20 @@
             document.getElementById('timer').textContent = "10:00";
             document.getElementById('results-overlay').classList.remove('visible');
 
-            // Rebuild Grid
             buildGrid();
 
-            // Restart Timer if game was already active (bypassed start screen)
             if (gameActive) {
                 clearInterval(timerInterval);
                 timerInterval = setInterval(updateTimer, 1000);
             }
         }
 
-        // Allow DEV Menu to change size
         function changeGridSize(newSize) {
             gridSize = parseInt(newSize);
-            // Update CSS Variable for Grid Layout
             document.documentElement.style.setProperty('--grid-size', gridSize);
             resetGame();
         }
 
-        // Initialize default grid
         buildGrid();
 
         // --- Interaction Logic ---
@@ -628,7 +632,6 @@
                 const cx = rect.left + rect.width / 2;
                 const cy = rect.top + rect.height / 2;
                 
-                // 18px radius requirement to snap
                 if (Math.hypot(e.clientX - cx, e.clientY - cy) < 18) {
                     const x = parseInt(cell.dataset.x);
                     const y = parseInt(cell.dataset.y);
@@ -675,8 +678,8 @@
             cells.forEach(c => c.classList.remove('selected'));
             dragPath.forEach(node => node.cell.classList.add('selected'));
             
-            // Update Active Word Display
-            const currentWord = dragPath.map(node => node.cell.textContent).join('');
+            // Ensure uppercase handling for "Qu" 
+            const currentWord = dragPath.map(node => node.cell.textContent.toUpperCase()).join('');
             document.getElementById('current-word-display').textContent = currentWord;
         }
 
@@ -685,7 +688,8 @@
             isDragging = false;
             if (dragPath.length === 0) return;
 
-            const word = dragPath.map(node => node.cell.textContent).join('');
+            // Extract the joined uppercase word (handles 'Qu' seamlessly)
+            const word = dragPath.map(node => node.cell.textContent.toUpperCase()).join('');
             
             if (word.length >= 3) {
                 validateWord(word);
@@ -707,7 +711,7 @@
             const isEpic = word.length > 5; 
 
             if (isValid) {
-                // Update Core Stats
+                // Word length perfectly accounts for "QU" natively giving 2 points!
                 score += word.length;
                 wordCount++;
                 totalLetters += word.length;
@@ -725,7 +729,6 @@
                 if (isEpic) wordBadge.classList.add('epic-badge');
                 wordBadge.textContent = word;
                 
-                // Interactive Hover Feature
                 wordBadge.addEventListener('mouseenter', () => {
                     wordCells.forEach(cell => cell.classList.add('word-focus'));
                 });
@@ -736,7 +739,6 @@
                 const wordList = document.getElementById('word-list');
                 wordList.insertBefore(wordBadge, wordList.firstChild);
 
-                // Update the grid visuals (Heatmap & Pulse)
                 dragPath.forEach((node, index) => {
                     node.cell.classList.remove('selected');
                     
@@ -792,14 +794,12 @@
             gameActive = false;
             document.getElementById('timer').textContent = "00:00";
             
-            // Populate stats
             document.getElementById('stat-score').textContent = score;
             document.getElementById('stat-words').textContent = wordCount;
             document.getElementById('stat-letters').textContent = totalLetters;
             document.getElementById('stat-avg').textContent = wordCount ? (totalLetters / wordCount).toFixed(1) : 0;
             document.getElementById('stat-longest').textContent = longestWord || "NONE";
             
-            // Show Overlay
             document.getElementById('results-overlay').classList.add('visible');
         }
 
@@ -807,7 +807,6 @@
             let shareText = `The Daily Puzzle - ${today}\n`;
             shareText += `Points: ${score} | Words: ${wordCount}\n\n`;
             
-            // Generate Grid Map dynamically based on gridSize
             for (let y = 0; y < gridSize; y++) {
                 let rowText = "";
                 for (let x = 0; x < gridSize; x++) {
@@ -821,7 +820,6 @@
                 shareText += rowText + "\n";
             }
 
-            // Fallback execCommand for iFrame constraints
             const textarea = document.createElement('textarea');
             textarea.value = shareText;
             textarea.style.position = 'fixed';
